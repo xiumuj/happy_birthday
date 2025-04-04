@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚠️ 系统警报：检测到30岁生物体 ⚠️</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+    <style>
+        :root {
+            --neon-pink: #ff2a6d;
+            --neon-blue: #05d9e8;
+            --neon-purple: #d300c5;
+            --dark-bg: #0d0221;
+            --glow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-pink);
+        }
+        
+        body {
+            background-color: var(--dark-bg);
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            background-image: 
+                linear-gradient(rgba(5, 217, 232, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(5, 217, 232, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        
+        .cyber-border {
+            border: 2px solid var(--neon-pink);
+            box-shadow: var(--glow);
+            position: relative;
+        }
+        
+        .cyber-border::before {
+            content: "";
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            right: -5px;
+            bottom: -5px;
+            border: 1px solid var(--neon-blue);
+            z-index: -1;
+        }
+        
+        header {
+            text-align: center;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            background: linear-gradient(90deg, var(--neon-pink), var(--neon-purple), var(--neon-blue));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 15px rgba(255, 42, 109, 0.5);
+            margin-bottom: 1rem;
+            animation: flicker 1.5s infinite alternate;
+        }
+        
+        @keyframes flicker {
+            0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+                text-shadow: 
+                    0 0 5px var(--neon-pink),
+                    0 0 10px var(--neon-purple),
+                    0 0 20px var(--neon-blue);
+            }
+            20%, 24%, 55% {
+                text-shadow: none;
+            }
+        }
+        
+        .age-counter {
+            font-size: 5rem;
+            font-weight: bold;
+            color: var(--neon-blue);
+            text-shadow: 0 0 10px var(--neon-blue);
+            margin: 1rem 0;
+        }
+        
+        #memory-map {
+            height: 700px;
+            width: 90%;
+            margin: 2rem auto;
+            position: relative;
+        }
+        
+        .map-overlay {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: rgba(13, 2, 33, 0.8);
+            padding: 1rem;
+            border: 1px solid var(--neon-blue);
+            box-shadow: var(--glow);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            overflow: auto;
+        }
+        
+        .modal-content {
+            background-color: var(--dark-bg);
+            margin: 5% auto;
+            padding: 20px;
+            border: 2px solid var(--neon-pink);
+            width: 80%;
+            max-width: 800px;
+            position: relative;
+            box-shadow: var(--glow);
+        }
+        
+        .close {
+            color: var(--neon-blue);
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            background-color: rgba(0, 0, 0, 0.5);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 10px var(--neon-blue);
+        }
+        
+        .close:hover {
+            color: var(--neon-pink);
+            box-shadow: 0 0 15px var(--neon-pink);
+        }
+        
+        .photo-slide {
+            display: none;
+            text-align: center;
+            position: relative;
+        }
+        
+        .photo-slide img {
+            max-width: 100%;
+            border: 1px solid var(--neon-blue);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px rgba(5, 217, 232, 0.5);
+        }
+        
+        .photo-slide img:hover {
+            box-shadow: 0 0 15px var(--neon-pink);
+        }
+        
+        .photo-caption {
+            margin-top: 1rem;
+            color: var(--neon-blue);
+            font-size: 1.2rem;
+        }
+        
+        .console {
+            width: 90%;
+            margin: 2rem auto;
+            padding: 1rem;
+            background-color: rgba(0, 0, 0, 0.7);
+            border: 1px solid var(--neon-blue);
+            height: 200px;
+            overflow-y: scroll;
+            font-family: monospace;
+        }
+        
+        .console-line {
+            margin: 0.5rem 0;
+            color: var(--neon-blue);
+        }
+        
+        .console-input {
+            display: flex;
+            margin-top: 0.5rem;
+        }
+        
+        .prompt {
+            color: var(--neon-pink);
+            margin-right: 0.5rem;
+        }
+        
+        .cyber-button {
+            background: transparent;
+            color: var(--neon-blue);
+            border: 1px solid var(--neon-blue);
+            padding: 0.5rem 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            margin: 0.5rem;
+            transition: all 0.3s;
+        }
+        
+        .cyber-button:hover {
+            background: var(--neon-blue);
+            color: var(--dark-bg);
+            box-shadow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-blue);
+        }
+        
+        .cyber-button::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(5, 217, 232, 0.4), transparent);
+            transition: all 0.5s;
+        }
+        
+        .cyber-button:hover::before {
+            left: 100%;
+        }
+        
+        /* 英雄模块动画 */
+        @keyframes borderPulse {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+            100% { transform: translateY(0) rotate(360deg); }
+        }
+        
+        @keyframes expandLine {
+            0% { transform: scaleX(0); opacity: 0; }
+            50% { transform: scaleX(1); opacity: 0.7; }
+            100% { transform: scaleX(0); opacity: 0; }
+        }
+        
+        .cyber-card {
+            transition: all 0.5s ease;
+        }
+        
+        .cyber-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 0 20px var(--neon-blue), 0 0 40px var(--neon-pink);
+        }
+        
+        /* 响应式样式 */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            #memory-map {
+                height: 300px;
+            }
+            
+            .modal-content {
+                width: 95%;
+                margin: 10% auto;
+            }
+            
+            .cyber-card {
+                padding: 2rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            .age-counter {
+                font-size: 3rem;
+            }
+            
+            #memory-map {
+                height: 200px;
+            }
+            
+            .cyber-button {
+                padding: 0.5rem 1rem;
+                font-size: 0.9rem;
+                margin: 0.3rem;
+            }
+            
+            .modal-content {
+                width: 98%;
+                margin: 5% auto;
+                padding: 10px;
+            }
+            
+            .photo-thumbnail {
+                width: 80px;
+                height: 80px;
+            }
+            
+            .console {
+                height: 150px;
+                font-size: 0.8rem;
+            }
+            
+            .hero-content {
+                padding: 1rem;
+            }
+            
+            .hero-content h2 {
+                font-size: 1.5rem;
+            }
+            
+            .hero-content p {
+                font-size: 1rem;
+            }
+        }
+
+        /* 照片缩略图样式 */
+        .photo-thumbnail {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            margin: 8px;
+            border: 2px solid var(--neon-purple);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 4px;
+            box-shadow: 0 0 5px rgba(5, 217, 232, 0.3);
+        }
+
+        .photo-thumbnail:hover {
+            transform: scale(1.1);
+            border-color: var(--neon-pink);
+            box-shadow: 0 0 10px var(--neon-pink);
+        }
+
+        .thumbnail-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding: 10px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--neon-blue) var(--dark-bg);
+        }
+        
+        .thumbnail-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .thumbnail-container::-webkit-scrollbar-track {
+            background: var(--dark-bg);
+            border-radius: 10px;
+        }
+        
+        .thumbnail-container::-webkit-scrollbar-thumb {
+            background-color: var(--neon-blue);
+            border-radius: 10px;
+            border: 2px solid var(--dark-bg);
+        }
+        
+        /* 照片墙动画效果 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .photo-thumbnail {
+            animation: fadeIn 0.3s ease forwards;
+            animation-delay: calc(0.05s * var(--photo-index, 0));
+            opacity: 0;
+        }
+
+        /* 信封和信纸样式 */
+        .envelope-modal {
+            display: none;
+            position: fixed;
+            z-index: 3000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            overflow: auto;
+        }
+
+        .envelope {
+            position: relative;
+            width: 300px;
+            height: 200px;
+            margin: 50px auto;
+            background: linear-gradient(45deg, var(--neon-pink), var(--neon-purple));
+            border-radius: 5px;
+            box-shadow: var(--glow);
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .envelope:hover {
+            transform: scale(1.05);
+        }
+
+        .envelope::before {
+            content: "❤";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .letter-modal {
+            display: none;
+            position: fixed;
+            z-index: 3100;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            overflow: auto;
+        }
+
+        .letter-content {
+            background: var(--dark-bg);
+            margin: 5% auto;
+            padding: 30px;
+            width: 80%;
+            max-width: 800px;
+            border: 2px solid var(--neon-blue);
+            box-shadow: var(--glow);
+            position: relative;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: var(--neon-blue);
+            white-space: pre-line;
+        }
+
+        .letter-close {
+            position: absolute;
+            right: 20px;
+            top: 20px;
+            color: var(--neon-pink);
+            font-size: 24px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .letter-close:hover {
+            background: var(--neon-pink);
+            color: var(--dark-bg);
+            box-shadow: 0 0 10px var(--neon-pink);
+        }
+    </style>
+</head>
+<body>
+    <!-- 开屏动画 - 英雄模块 -->
+    <div id="splash-screen" class="animate__animated animate__fadeIn" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 3000; overflow: hidden;">
+        <!-- 背景图片 - 可以方便替换 -->
+        <div class="hero-bg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: url('images/photo1.jpg'); background-size: cover; background-position: center; filter: brightness(0.3) blur(5px); z-index: -1;"></div>
+        
+        <!-- 网格叠加层 -->
+        <div class="grid-overlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(rgba(5, 217, 232, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(5, 217, 232, 0.1) 1px, transparent 1px); background-size: 20px 20px; opacity: 0.7; z-index: 0;"></div>
+        
+        <!-- 内容容器 -->
+        <div class="hero-content" style="position: relative; z-index: 1; height: 100%; width: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2rem;">
+            <div class="cyber-card" style="background: rgba(13, 2, 33, 0.7); border: 2px solid var(--neon-pink); box-shadow: var(--glow); padding: 3rem; max-width: 600px; width: 90%; text-align: center; position: relative; overflow: hidden;">
+                <!-- 闪烁边框效果 -->
+                <div class="card-border-effect" style="position: absolute; top: -2px; left: -2px; right: -2px; bottom: -2px; border: 2px solid var(--neon-blue); opacity: 0; animation: borderPulse 3s infinite alternate;"></div>
+                
+                <div id="cake" style="font-size: 5rem; margin-bottom: 2rem; position: relative; display: inline-block;">
+                    🎂
+                    <div class="glow-effect" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle, rgba(255, 42, 109, 0.4) 0%, transparent 70%); filter: blur(10px); z-index: -1;"></div>
+                </div>
+                
+                <h2 class="animate__animated animate__fadeInUp" style="color: var(--neon-pink); text-align: center; padding: 0 1rem; font-size: 2.2rem; margin-bottom: 1.5rem; text-shadow: 0 0 10px var(--neon-pink);">⚠️ 系统警报 ⚠️</h2>
+                <p class="animate__animated animate__fadeInUp animate__delay-1s" style="color: var(--neon-blue); font-size: 1.5rem; margin-bottom: 2rem; text-shadow: 0 0 5px var(--neon-blue);">检测到可爱生物即将30岁！</p>
+                
+                <button id="enter-site" class="cyber-button animate__animated animate__pulse animate__infinite" style="margin-top: 1rem; font-size: 1.2rem; padding: 0.8rem 2rem; background: linear-gradient(45deg, rgba(5, 217, 232, 0.2), rgba(211, 0, 197, 0.2)); border-width: 2px;">授权访问</button>
+            </div>
+            
+            <!-- 装饰元素 -->
+            <div class="decorative-elements">
+                <div class="cyber-circle" style="position: absolute; top: 15%; left: 15%; width: 50px; height: 50px; border: 1px solid var(--neon-blue); border-radius: 50%; opacity: 0.5; animation: float 8s infinite ease-in-out;"></div>
+                <div class="cyber-circle" style="position: absolute; bottom: 20%; right: 10%; width: 80px; height: 80px; border: 1px solid var(--neon-pink); border-radius: 50%; opacity: 0.5; animation: float 10s infinite ease-in-out reverse;"></div>
+                <div class="cyber-line" style="position: absolute; top: 40%; left: 0; width: 100px; height: 1px; background: linear-gradient(90deg, transparent, var(--neon-purple), transparent); opacity: 0.7; animation: expandLine 7s infinite;"></div>
+                <div class="cyber-line" style="position: absolute; bottom: 30%; right: 0; width: 150px; height: 1px; background: linear-gradient(90deg, transparent, var(--neon-blue), transparent); opacity: 0.7; animation: expandLine 5s infinite reverse;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 主页面内容 -->
+    <div id="main-content" style="display: none;">
+        <header class="cyber-border">
+            <h1 class="animate__animated animate__fadeInDown">SYSTEM_CELEBRATION.EXE</h1>
+            <div class="age-counter" id="age-counter">29.9999</div>
+            <p style="color: var(--neon-blue);">>>> 正在初始化30岁协议 <<<</p>
+            <div style="display: flex; justify-content: center; margin-top: 1rem;">
+                <button class="cyber-button" onclick="showModal('photos'); playClickSound()" onmouseover="playClickSound()">查看记忆</button>
+                <button class="cyber-button" onclick="activateGlitch(); playClickSound()" onmouseover="playClickSound()">开始记忆加载</button>
+            </div>
+        </header>
+
+        <!-- 足迹地图 -->
+        <section style="margin: 3rem 0;">
+            <h2 style="text-align: center; color: var(--neon-purple); margin-bottom: 1rem;">>>> 记忆坐标追踪系统 <<<</h2>
+            <div id="memory-map" class="cyber-border"></div>
+            <div class="map-overlay">
+                <p style="margin: 0; color: var(--neon-blue);">已记录坐标点: <span id="location-count">0</span></p>
+                <p style="margin: 0; color: var(--neon-pink);">总里程: <span id="total-distance">0</span> km</p>
+            </div>
+        </section>
+
+        <!-- 照片模态框 -->
+        <div id="photo-modal" class="modal">
+            <div class="modal-content cyber-border">
+                <span class="close" onclick="closeModal('photos')" style="position: absolute; right: 15px; top: 10px; font-size: 30px; z-index: 1000;">&times;</span>
+                <div class="photo-slide">
+                    <img src="" alt="记忆照片" style="max-height: 60vh;">
+                    <div class="photo-caption"></div>
+                </div>
+                <h3 style="color: var(--neon-blue); text-align: center; margin: 15px 0 5px 0;">记忆照片墙</h3>
+                <div class="thumbnail-container" id="thumbnail-container"></div>
+                <div style="text-align: center; margin-top: 1rem;">
+                    <button class="cyber-button" onclick="plusSlides(-1)">上一张</button>
+                    <button class="cyber-button" onclick="plusSlides(1)">下一张</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 控制台 -->
+        <section class="cyber-border" style="width: 90%; margin: 2rem auto; padding: 1rem;">
+            <h2 style="text-align: center; color: var(--neon-blue);">>>> 系统控制台 <<<</h2>
+            <div class="console" id="console-output">
+                <div class="console-line">> 系统启动中...</div>
+                <div class="console-line">> 加载30岁庆祝协议...</div>
+                <div class="console-line">> 正在扫描记忆数据库...</div>
+                <div class="console-line">> 警告: 检测到过多笑容数据!</div>
+                <div class="console-line">> 初始化地图系统...</div>
+            </div>
+            <div class="console-input">
+                <span class="prompt">></span>
+                <input type="text" style="flex-grow: 1; background: transparent; border: none; border-bottom: 1px solid var(--neon-blue); color: white; font-family: monospace; outline: none;" id="console-input" placeholder="输入 HELP 获取命令列表">
+            </div>
+        </section>
+
+        <!-- 信封模态框 -->
+        <div id="envelope-modal" class="envelope-modal">
+            <div class="envelope" onclick="showLetter()"></div>
+        </div>
+
+        <!-- 信纸模态框 -->
+        <div id="letter-modal" class="letter-modal">
+            <div class="letter-content">
+                <span class="letter-close" onclick="closeLetter()">&times;</span>
+                <div id="letter-text"></div>
+            </div>
+        </div>
+
+        <!-- 页脚 -->
+        <footer style="text-align: center; padding: 2rem; color: var(--neon-blue);">
+            <p>SYSTEM STATUS: CELEBRATION_MODE_ACTIVATED</p>
+            <p>© 2025 爱你的蒜香男孩 | 安全等级: 绝密</p>
+        </footer>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+    <script>
+        // 显示信封和信纸的函数
+        function showLetter() {
+            // 停止当前背景音乐
+            if (window.currentAudio) {
+                window.currentAudio.pause();
+                window.currentAudio.currentTime = 0;
+            }
+            // 确保停止birthday.mp3
+            if (window.birthdayAudio) {
+                window.birthdayAudio.pause();
+                window.birthdayAudio.currentTime = 0;
+            }
+            // 播放新的背景音乐
+            window.currentAudio = new Audio('music/loveyou.mp3');
+            window.currentAudio.play();
+            
+            document.getElementById('envelope-modal').style.display = 'none';
+            document.getElementById('letter-modal').style.display = 'block';
+            document.getElementById('letter-text').innerText = [
+                "亲爱的添净：",
+                "今天是你30岁生日,也是和你相识的第八年，结婚的第三年，时间像我们自驾游时盘山公路的转角，明明记得每个转弯时的心跳，回头望去却已是一路繁花。",
+                "还记得捷里别尔卡飘雪的夜晚，你带着厚厚的手套逗弄跟过来的雪橇犬，以防暴雪封路我们下定决心连夜找车逃离；摩尔曼斯克凛冽的寒风下，我们站在阿廖沙公园的最高点，眺望远处的码头和村庄。这些旅程像围巾一般，针脚细密却温暖踏实。后来我们去过的地方，地图上都变成了专属的坐标——曼谷的大皇宫，普吉岛的浪花，长野的户隐神社，函馆山的大雪，北海道的温泉雾气。",
+                "工作后的感情少了些轰轰烈烈，倒像一碗桂花醪糟，甜味沉淀在生活褶皱里。下班和你一块回家，在客厅里看你做饭，逗一会猫猫，时不时去厨房打打下手，一块边看综艺节目边吃饭。\n我偶尔会想,如果我现在还是一个人，会过着怎样的生活呢，肯定是单调无趣的，如同你不在的周末。",
+                "30岁是新的起点,但对我而言，你依然是那个在首次自驾在南澳大桥上欢呼雀跃的姑娘。谢谢你让我从'宅男'变成'旅人'，从'木头'变成会笨拙表达爱的丈夫。往后余生，想和你继续收集更多平凡的瞬间：可能是打双人游戏时的互相嘲讽，可能是在你画画时递过去的一杯热水，可能是我在工作时你突然冲过来的一个拥抱。",
+                "我依然没记住你在结婚典礼上的那句什么树什么风是怎么说的，只好用简单的话语送上我的祝福。",
+                "生日快乐，我的姑娘。",
+                "永远，爱你如初！"
+            ].join('\n\n');
+        }
+
+        function closeLetter() {
+            document.getElementById('letter-modal').style.display = 'none';
+        }
+
+        // 增强的开屏动画
+        document.addEventListener('DOMContentLoaded', function() {
+            // 添加初始动画效果
+            setTimeout(function() {
+                const heroContent = document.querySelector('.hero-content');
+                if (heroContent) {
+                    heroContent.style.opacity = '1';
+                }
+            }, 500);
+        });
+        
+        document.getElementById('enter-site').addEventListener('click', function() {
+            // 按钮点击效果
+            this.classList.remove('animate__pulse', 'animate__infinite');
+            this.classList.add('animate__rubberBand');
+            
+            // 播放点击音效
+            playClickSound();
+            
+function playClickSound() {
+    var clickSound = new Audio('sounds/click.mp3');
+    clickSound.play();
+}
+
+// 播放背景音乐
+            window.birthdayAudio = new Audio('music/birthday.mp3');
+            var isPlaying = true;
+            
+            // 添加喇叭图标点击事件
+            const speakerIcon = document.getElementById('speaker-icon');
+            speakerIcon.addEventListener('click', function() {
+                if (isPlaying) {
+                    window.birthdayAudio.pause();
+                    speakerIcon.textContent = '🔈';
+                } else {
+                    window.birthdayAudio.play();
+                    speakerIcon.textContent = '🔊';
+                }
+                isPlaying = !isPlaying;
+            });
+            window.birthdayAudio.play();
+            
+            // 蛋糕爆炸动画
+            gsap.to("#cake", {
+                scale: 1.5,
+                duration: 0.3,
+                onComplete: function() {
+                    document.getElementById('cake').textContent = "💥";
+                    
+                    // 添加爆炸效果
+                    const explosionEffect = document.createElement('div');
+                    explosionEffect.style.position = 'absolute';
+                    explosionEffect.style.top = '0';
+                    explosionEffect.style.left = '0';
+                    explosionEffect.style.width = '100%';
+                    explosionEffect.style.height = '100%';
+                    explosionEffect.style.background = 'radial-gradient(circle, rgba(255, 42, 109, 0.8) 0%, transparent 70%)';
+                    explosionEffect.style.animation = 'fadeOut 1s forwards';
+                    explosionEffect.style.zIndex = '10';
+                    document.getElementById('cake').parentNode.appendChild(explosionEffect);
+                    
+                    // 添加爆炸动画样式
+                    const style = document.createElement('style');
+                    style.textContent = `
+                        @keyframes fadeOut {
+                            0% { opacity: 1; transform: scale(0); }
+                            50% { opacity: 0.8; transform: scale(2); }
+                            100% { opacity: 0; transform: scale(3); }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                    
+                    // 淡出整个开屏
+                    gsap.to(".cyber-card", {
+                        y: -50,
+                        opacity: 0,
+                        duration: 0.8,
+                        ease: "power2.out"
+                    });
+                    
+                    gsap.to(".decorative-elements", {
+                        opacity: 0,
+                        duration: 0.5
+                    });
+                    
+                    gsap.to("#splash-screen", {
+                        opacity: 0,
+                        duration: 1.2,
+                        delay: 0.3,
+                        onComplete: function() {
+                            document.getElementById('splash-screen').style.display = "none";
+                            document.getElementById('main-content').style.display = "block";
+                            initPage();
+                        }
+                    });
+                }
+            });
+        });
+
+        // 年龄计数器动画
+        function animateAgeCounter() {
+            let counter = { value: 29.9999 };
+            gsap.to(counter, {
+                value: 30,
+                duration: 3,
+                onUpdate: function() {
+                    document.getElementById('age-counter').textContent = counter.value.toFixed(4);
+                },
+                onComplete: function() {
+                    document.getElementById('age-counter').textContent = "30.0000";
+                    // 添加闪烁效果
+                    setInterval(function() {
+                        document.getElementById('age-counter').style.textShadow = "0 0 10px " + (Math.random() > 0.5 ? "var(--neon-pink)" : "var(--neon-blue)");
+                    }, 300);
+                }
+            });
+        }
+
+        // 初始化地图
+        function initMap() {
+            const map = L.map('memory-map').setView([30, 0], 2);
+            
+            // 自定义赛博朋克风格地图
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                className: 'cyber-map'
+            }).addTo(map);
+            
+            // 自定义地图样式
+            const style = document.createElement('style');
+            style.textContent = `
+                .cyber-map {
+                    filter: hue-rotate(180deg) contrast(1.2) saturate(1.5) brightness(0.7) invert(100%);
+                }
+                .cyber-map .leaflet-tile {
+                    border: 1px solid rgba(5, 217, 232, 0.1) !important;
+                }
+            `;
+            document.head.appendChild(style);
+            
+            // 添加记忆点 - 现在使用本地images文件夹中的照片
+            // 使用window.memories使其成为全局变量，以便其他函数可以访问
+            window.memories = [
+                {
+                    latlng: [22.5431, 114.0579],
+                    title: "深圳",
+                    content: "起点，新的起点！",
+                    photos: [
+                        { url: "images/shenzhen/IMG_0085.jpg", caption: "深圳市中心的繁华景象" },
+                        { url: "images/shenzhen/IMG_0133.jpg", caption: "深圳湾的美丽日落" },
+                        { url: "images/shenzhen/IMG_20230817_220458.jpg", caption: "深圳湾公园" },
+                        { url: "images/shenzhen/IMG_20230901_120337.jpg", caption: "深圳夜景" },
+                        { url: "images/shenzhen/IMG_9305.jpg", caption: "深圳城市风光" },
+                        { url: "images/shenzhen/z1.jpg", caption: "深圳地标建筑" },
+                        { url: "images/shenzhen/z2.jpg", caption: "深圳现代景观" },
+                        { url: "images/shenzhen/image_1743315342527.jpg", caption: "深圳夜景" }
+                    ],
+                    iconColor: "#ff2a6d"
+                },
+                {
+                    latlng: [39.9042, 116.4074],
+                    title: "北京",
+                    content: "立水桥传奇",
+                    photos: [
+                        { url: "images/beijing/1.jpg", caption: "故宫的宏伟建筑" },
+                        { url: "images/beijing/2.jpg", caption: "长城上的壮丽风景" },
+                        { url: "images/beijing/3.jpg", caption: "北京城市风光" },
+                        { url: "images/beijing/4.jpg", caption: "北京文化景观" },
+                        { url: "images/beijing/5.jpg", caption: "北京历史遗迹" },
+                        { url: "images/beijing/6.jpg", caption: "北京现代建筑" }
+                    ],
+                    iconColor: "#05d9e8"
+                },
+                {
+                    latlng: [31.2304, 121.4737],
+                    title: "上海",
+                    content: "苦逼的实习之旅",
+                    photos: [
+                        { url: "images/shanghai/1.jpg", caption: "外滩夜景" },
+                        { url: "images/shanghai/2.jpg", caption: "陆家嘴金融区" },
+                        { url: "images/shanghai/3.jpg", caption: "上海城市风光" }
+                    ],
+                    iconColor: "#d300c5"
+                },
+                {
+                    latlng: [45.8038, 126.5340],
+                    title: "哈尔滨",
+                    content: "冰雪单衣勇闯冰之城，冻成狗",
+                    photos: [
+                        { url: "images/haerbin/IMG_20191113_110222.jpg", caption: "冰雪大世界" },
+                        { url: "images/haerbin/IMG_20191113_110755.jpg", caption: "中央大街" },
+                        { url: "images/haerbin/IMG_20191113_124335.jpg", caption: "哈尔滨风景" },
+                        { url: "images/haerbin/IMG_20191113_141007.jpg", caption: "哈尔滨城市景观" }
+                    ],
+                    iconColor: "#ff2a6d"
+                },
+                {
+                    latlng: [29.3392, 104.7786],
+                    title: "自贡",
+                    content: "我来到，你的城市",
+                    photos: [
+                        { url: "images/zigong/image_1743315312946.jpg", caption: "自贡恐龙博物馆" },
+                        { url: "images/zigong/image_1743315315156.jpg", caption: "自贡彩灯" },
+                        { url: "images/zigong/image_1743317118709.jpg", caption: "自贡风景" },
+                        { url: "images/zigong/image_1743317121226.jpg", caption: "自贡城市景观" },
+                        { url: "images/zigong/image_1743317127203.jpg", caption: "自贡遗产" }
+                    ],
+                    iconColor: "#05d9e8"
+                },
+                {
+                    latlng: [21.9162, 100.0719],
+    latlng: [18.2528, 109.5120],
+                    title: "三亚",
+                    content: "鸟巢酒店非常不错'",
+                    photos: [
+                        { url: "images/sanya/1.jpg", caption: "三亚湾的椰林海景" },
+                        { url: "images/sanya/2.jpg", caption: "亚龙湾美丽的沙滩" },
+                        { url: "images/sanya/3.jpg", caption: "三亚热带风光" },
+                        { url: "images/sanya/IMG_20210816_184712.jpg", caption: "三亚日落美景" },
+                        { url: "images/sanya/IMG_20210817_142813.jpg", caption: "三亚海滩风光" },
+                        { url: "images/sanya/IMG_4587.jpg", caption: "三亚度假酒店" },
+                        { url: "images/sanya/IMG_4601.jpg", caption: "三亚热带植物" },
+                        { url: "images/sanya/IMG_4644.jpg", caption: "三亚水上活动" }
+                    ],
+                    iconColor: "#ff2a6d"
+                },
+                {
+                    latlng: [21.9162, 100.0719],
+                    title: "西双版纳",
+                    content: "泰国王妃cosplay",
+                    photos: [
+                        { url: "images/xishuangbanna/IMG_20200722_193438.jpg", caption: "西双版纳夜市" },
+                        { url: "images/xishuangbanna/IMG_20200722_194751.jpg", caption: "傣族舞蹈表演" },
+                        { url: "images/xishuangbanna/IMG_20200724_162042.jpg", caption: "热带植物园" },
+                        { url: "images/xishuangbanna/IMG_20200726_193242.jpg", caption: "民族村寨" },
+                        { url: "images/xishuangbanna/beauty_20200725212456.jpg", caption: "西双版纳日落" },
+                        { url: "images/xishuangbanna/beauty_20200725221635.jpg", caption: "夜间灯光秀" }
+                    ],
+                    iconColor: "#05d9e8"
+                },
+                {
+                    latlng: [35.2339, 115.4808],
+                    title: "菏泽",
+                    content: "你来到，我的城市",
+                    photos: [
+                        { url: "images/heze/1.JPG", caption: "牡丹园盛开的牡丹" },
+                        { url: "images/heze/2.jpg", caption: "曹州牡丹" },
+                        { url: "images/heze/3.jpg", caption: "菏泽牡丹文化" },
+                        { url: "images/heze/4.jpg", caption: "菏泽城市风光" },
+                        { url: "images/heze/5.jpg", caption: "菏泽历史遗迹" },
+                        { url: "images/heze/6.jpg", caption: "菏泽自然景观" }
+                    ],
+                    iconColor: "#d300c5"
+                },
+                {
+                    latlng: [55.7558, 37.6173],
+                    title: "莫斯科",
+                    content: "我的第一次出国",
+                    photos: [
+                        { url: "images/mosike/1.jpg", caption: "红场夜景" },
+                        { url: "images/mosike/2.jpg", caption: "圣瓦西里大教堂" },
+                        { url: "images/mosike/3.jpg", caption: "莫斯科城市风光" },
+                        { url: "images/mosike/4.jpg", caption: "莫斯科历史建筑" },
+                        { url: "images/mosike/5.jpg", caption: "莫斯科文化景观" }
+                    ],
+                    iconColor: "#ff2a6d"
+                },
+                {
+                    latlng: [68.9585, 33.0827],
+                    title: "摩尔曼斯克",
+                    content: "真漂亮啊",
+                    photos: [
+                        { url: "images/moermansike/1.jpg", caption: "北极光" },
+                        { url: "images/moermansike/2.jpg", caption: "阿廖沙纪念碑" },
+                        { url: "images/moermansike/3.jpg", caption: "摩尔曼斯克港口" },
+                        { url: "images/moermansike/4.jpg", caption: "摩尔曼斯克城市风光" },
+                        { url: "images/moermansike/5.jpg", caption: "摩尔曼斯克自然景观" },
+                        { url: "images/moermansike/6.jpg", caption: "摩尔曼斯克极光" }
+                    ],
+                    iconColor: "#05d9e8"
+                },
+                {
+                    latlng: [7.8804, 98.3923],
+                    title: "普吉岛",
+                    content: "泰国最大的岛屿，热带天堂",
+                    photos: [
+                        { url: "images/pujidao/image_1743315436180.jpg", caption: "芭东海滩" },
+                        { url: "images/pujidao/image_1743315439678.jpg", caption: "普吉岛日落" },
+                        { url: "images/pujidao/image_1743315442022.jpg", caption: "普吉岛海滩" },
+                        { url: "images/pujidao/image_1743315444314.jpg", caption: "普吉岛热带风光" },
+                        { url: "images/pujidao/image_1743315446462.jpg", caption: "普吉岛自然景观" },
+                        { url: "images/pujidao/image_1743315451491.jpg", caption: "普吉岛度假风情" }
+                    ],
+                    iconColor: "#d300c5"
+                },
+                {
+                    latlng: [40.8424, 111.7496],
+                    title: "呼和浩特",
+                    content: "英姿飒爽",
+                    photos: [
+                        { url: "images/huhehaote/1.jpg", caption: "呼和浩特草原风光" },
+                        { url: "images/huhehaote/2.jpg", caption: "内蒙古大草原" },
+                        { url: "images/huhehaote/3.jpg", caption: "呼和浩特城市风光" },
+                        { url: "images/huhehaote/4.jpg", caption: "内蒙古文化景观" }
+                    ],
+                    iconColor: "#05d9e8"
+                },
+                {
+                    latlng: [35.6895, 139.6917],
+                    title: "东京",
+                    content: "户隐神社真漂亮",
+                    photos: [
+                        { url: "images/dongjing/1.jpg", caption: "东京塔夜景" },
+                        { url: "images/dongjing/2.jpg", caption: "涩谷十字路口" },
+                        { url: "images/dongjing/3.jpg", caption: "东京城市风光" },
+                        { url: "images/dongjing/4.jpg", caption: "东京现代建筑" },
+                        { url: "images/dongjing/5.jpg", caption: "东京传统文化" },
+                        { url: "images/dongjing/6.jpg", caption: "东京街头景象" },
+                        { url: "images/dongjing/7.jpg", caption: "东京夜生活" }
+                    ],
+                    iconColor: "#ff2a6d"
+                },
+                {
+                    latlng: [43.0618, 141.3545],
+                    title: "札幌",
+                    content: "没想到我们也来到了北海道",
+                    photos: [
+                        { url: "images/zhahuang/1.jpg", caption: "札幌雪祭" },
+                        { url: "images/zhahuang/2.jpg", caption: "札幌钟楼" },
+                        { url: "images/zhahuang/3.jpg", caption: "札幌城市风光" },
+                        { url: "images/zhahuang/4.jpg", caption: "札幌冬季景观" },
+                        { url: "images/zhahuang/5.jpg", caption: "札幌文化景点" }
+                    ],
+                    iconColor: "#05d9e8"
+                },
+                {
+                    latlng: [22.5431, 114.0579],
+                    title: "深圳 再次出发",
+                    content: "回到起点，开始新的旅程",
+                    photos: [
+                        { url: "images/shenzhen/IMG_0085.jpg", caption: "深圳市中心的繁华景象" },
+                        { url: "images/shenzhen/IMG_0133.jpg", caption: "深圳湾的美丽日落" },
+                        { url: "images/shenzhen/IMG_20230817_220458.jpg", caption: "深圳湾公园" },
+                        { url: "images/shenzhen/IMG_20230901_120337.jpg", caption: "深圳夜景" },
+                        { url: "images/shenzhen/IMG_9305.jpg", caption: "深圳城市风光" },
+                        { url: "images/shenzhen/z1.jpg", caption: "深圳地标建筑" },
+                        { url: "images/shenzhen/z2.jpg", caption: "深圳现代景观" },
+                        { url: "images/shenzhen/image_1743315342527.jpg", caption: "深圳夜景" }
+                    ],
+                    iconColor: "#d300c5"
+                }
+            ];
+            
+            // 创建连线
+            const latlngs = memories.map(m => m.latlng);
+            const polyline = L.polyline(latlngs, {
+                color: '#05d9e8',
+                weight: 2,
+                dashArray: '10, 10',
+                lineJoin: 'round'
+            }).addTo(map);
+            
+            // 动画绘制路径
+            polyline._path.classList.add('path-animation');
+            
+            // 添加记忆点标记
+            memories.forEach(memory => {
+                const marker = L.circleMarker(memory.latlng, {
+                    radius: 8,
+                    fillColor: memory.iconColor,
+                    color: "#fff",
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }).addTo(map);
+                
+                // 创建照片缩略图HTML
+                const thumbnailsHTML = memory.photos.map((photo, index) => `
+                    <img src="${photo.url}" class="photo-thumbnail" 
+                         onclick="showSpecificPhoto(${JSON.stringify(memory.photos)}, ${index})"
+                         title="${photo.caption}">
+                `).join('');
+                
+                marker.bindPopup(`
+                    <div style="background: #0d0221; color: white; padding: 10px; border: 1px solid ${memory.iconColor}; max-width: 300px;">
+                        <h3 style="margin: 0 0 5px 0; color: ${memory.iconColor};">${memory.title}</h3>
+                        <p style="margin: 0 0 10px 0;">${memory.content}</p>
+                        <div style="text-align: center;">
+                            <button onclick="showLocationPhotos(${JSON.stringify(memory).replace(/"/g, '&quot;')})" 
+                                    style="background: ${memory.iconColor}; border: none; padding: 5px 10px; cursor: pointer; color: #0d0221;">
+                                查看记忆 (${memory.photos.length}张)
+                            </button>
+                        </div>
+                        <div class="thumbnail-container">
+                            ${thumbnailsHTML}
+                        </div>
+                    </div>
+                `);
+                
+                // 添加脉冲动画
+                setInterval(() => {
+                    marker.setStyle({
+                        fillOpacity: 0.4 + Math.random() * 0.6
+                    });
+                }, 1000);
+            });
+            
+            // 更新统计信息
+            document.getElementById('location-count').textContent = memories.length;
+            document.getElementById('total-distance').textContent = "12,345";
+            
+            // 调整地图视图
+            map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+        }
+        
+        // 当前展示的位置照片数据
+        let currentLocationPhotos = [];
+        let currentPhotoIndex = 0;
+
+        // 显示特定地点的照片集
+        function showLocationPhotos(memory) {
+            currentLocationPhotos = memory.photos;
+            currentPhotoIndex = 0;
+            updatePhotoModal();
+            document.getElementById('photo-modal').style.display = 'block';
+            
+            // 添加照片墙标题
+            const modalTitle = document.querySelector('.modal-content h3');
+            if (modalTitle) {
+                modalTitle.textContent = `${memory.title} - 记忆照片墙 (${memory.photos.length}张)`;
+            }
+            
+            // 添加键盘事件监听
+            document.addEventListener('keydown', handleKeyDown);
+        }
+        
+        // 键盘事件处理函数
+        function handleKeyDown(e) {
+            if (document.getElementById('photo-modal').style.display === 'block') {
+                if (e.key === 'ArrowLeft') {
+                    plusSlides(-1);
+                } else if (e.key === 'ArrowRight') {
+                    plusSlides(1);
+                }
+            }
+        }
+
+        // 显示特定索引的照片
+        function showSpecificPhoto(photos, index) {
+            currentLocationPhotos = photos;
+            currentPhotoIndex = index;
+            updatePhotoModal();
+            document.getElementById('photo-modal').style.display = 'block';
+            
+            // 滚动到当前选中的缩略图
+            setTimeout(() => {
+                const activeThumb = document.querySelector('.photo-thumbnail[style*="scale(1.1)"]');
+                if (activeThumb) {
+                    activeThumb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }, 100);
+        }
+
+        // 更新照片模态框内容
+        function updatePhotoModal() {
+            if (currentLocationPhotos.length === 0) return;
+            
+            const modal = document.getElementById('photo-modal');
+            const photo = currentLocationPhotos[currentPhotoIndex];
+            
+            // 更新主照片
+            const mainImg = modal.querySelector('img');
+            mainImg.src = photo.url;
+            // 设置初始状态为小图模式
+            mainImg.style.maxHeight = '60vh';
+            mainImg.style.cursor = 'zoom-in';
+            // 添加提示文本
+            const zoomHint = document.createElement('div');
+            zoomHint.className = 'zoom-hint';
+            zoomHint.textContent = '点击图片可放大查看原图';
+            zoomHint.style.position = 'absolute';
+            zoomHint.style.bottom = '10px';
+            zoomHint.style.right = '10px';
+            zoomHint.style.background = 'rgba(0, 0, 0, 0.7)';
+            zoomHint.style.color = 'var(--neon-blue)';
+            zoomHint.style.padding = '5px 10px';
+            zoomHint.style.borderRadius = '5px';
+            zoomHint.style.fontSize = '0.8rem';
+            zoomHint.style.opacity = '0.8';
+            
+            // 清除之前的提示（如果有）
+            const oldHint = modal.querySelector('.zoom-hint');
+            if (oldHint) oldHint.remove();
+            
+            // 添加新提示
+            modal.querySelector('.photo-slide').appendChild(zoomHint);
+            
+            mainImg.onclick = function() {
+                // 切换大图查看模式
+                if(this.style.maxHeight === '90vh') {
+                    this.style.maxHeight = '60vh';
+                    this.style.cursor = 'zoom-in';
+                    zoomHint.textContent = '点击图片可放大查看原图';
+                } else {
+                    this.style.maxHeight = '90vh';
+                    this.style.cursor = 'zoom-out';
+                    zoomHint.textContent = '点击图片可缩小';
+                }
+            };
+            modal.querySelector('.photo-caption').textContent = 
+                `${photo.caption} (${currentPhotoIndex + 1}/${currentLocationPhotos.length})`;
+            
+            // 更新缩略图容器
+            const thumbnailContainer = document.getElementById('thumbnail-container');
+            thumbnailContainer.innerHTML = currentLocationPhotos.map((p, i) => `
+                <img src="${p.url}" class="photo-thumbnail" 
+                     onclick="showSpecificPhoto(currentLocationPhotos, ${i})"
+                     style="${i === currentPhotoIndex ? 'border-color: var(--neon-pink); transform: scale(1.1);' : ''}"
+                     title="${p.caption}"
+                     style="--photo-index: ${i}; ${i === currentPhotoIndex ? 'border-color: var(--neon-pink); transform: scale(1.1);' : ''}">
+            `).join('');
+            
+            // 重置动画
+            setTimeout(() => {
+                const thumbnails = thumbnailContainer.querySelectorAll('.photo-thumbnail');
+                thumbnails.forEach((thumbnail, index) => {
+                    thumbnail.addEventListener('click', function() {
+                        const modal = document.getElementById('photo-modal');
+                        const photoSlide = modal.querySelector('.photo-slide');
+                        const img = photoSlide.querySelector('img');
+                        const caption = photoSlide.querySelector('.photo-caption');
+                
+                        img.src = thumbnail.src;
+                        caption.textContent = `照片 ${index + 1}`;
+                
+                        modal.style.display = 'block';
+                        photoSlide.style.display = 'block';
+                    });
+                });
+                
+                const closeModal = (modalId) => {
+                    const modal = document.getElementById(modalId);
+                    modal.style.display = 'none';
+                    const photoSlide = modal.querySelector('.photo-slide');
+                    photoSlide.style.display = 'none';
+                };
+            }, 50);
+        }
+
+        // 照片导航
+        function plusSlides(n) {
+            currentPhotoIndex += n;
+            if (currentPhotoIndex >= currentLocationPhotos.length) currentPhotoIndex = 0;
+            if (currentPhotoIndex < 0) currentPhotoIndex = currentLocationPhotos.length - 1;
+            updatePhotoModal();
+            
+            // 滚动到当前选中的缩略图
+            setTimeout(() => {
+                const activeThumb = document.querySelector('.photo-thumbnail[style*="scale(1.1)"]');
+                if (activeThumb) {
+                    activeThumb.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }, 100);
+        }
+        
+        // 控制台交互
+        function setupConsole() {
+            const consoleInput = document.getElementById('console-input');
+            const consoleOutput = document.getElementById('console-output');
+            
+            consoleInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const command = consoleInput.value.trim();
+                    consoleInput.value = '';
+                    
+                    // 添加输入到控制台
+                    const inputLine = document.createElement('div');
+                    inputLine.className = 'console-line';
+                    inputLine.innerHTML = `<span class="prompt">></span> ${command}`;
+                    consoleOutput.appendChild(inputLine);
+                    
+                    // 处理命令
+                    processCommand(command);
+                    
+                    // 滚动到底部
+                    consoleOutput.scrollTop = consoleOutput.scrollHeight;
+                }
+            });
+        }
+        
+        function processCommand(command) {
+            const consoleOutput = document.getElementById('console-output');
+            const response = document.createElement('div');
+            response.className = 'console-line';
+            
+            switch(command.toLowerCase()) {
+                case 'help':
+                    response.innerHTML = `
+                        可用命令:<br>
+                        - HELP: 显示此帮助<br>
+                        - MEMORIES: 显示记忆点数量<br>
+                        - LOVE: 特殊命令<br>
+                        - GLITCH: 激活故障效果<br>
+                        - CLEAR: 清空控制台<br>
+                        - 你的名字: 触发彩蛋
+                    `;
+                    break;
+                case 'memories':
+                    response.textContent = `系统记录的记忆点数量: ${document.getElementById('location-count').textContent}`;
+                    break;
+                case 'love':
+                    response.innerHTML = `<span style="color: var(--neon-pink);">系统检测到无法量化的情感数据...</span>`;
+                    break;
+                case 'glitch':
+                    activateGlitch();
+                    response.textContent = "激活故障效果...";
+                    break;
+                case 'clear':
+                    consoleOutput.innerHTML = '';
+                    return; // 不添加响应行
+                case '添净':
+                    const loveMessages = [
+                        "今天是你30岁生日,也是和你相识的第八年，结婚的第三年，时间像我们自驾游时盘山公路的转角，明明记得每个转弯时的心跳，回头望去却已是一路繁花。",
+                        "还记得捷里别尔卡飘雪的夜晚，你带着厚厚的手套逗弄跟过来的雪橇犬，以防暴雪封路我们下定决心连夜找车逃离；摩尔曼斯克凛冽的寒风下，我们站在阿廖沙公园的最高点，眺望远处的码头和村庄。这些旅程像围巾一般，针脚细密却温暖踏实。后来我们去过的地方，地图上都变成了专属的坐标——曼谷的大皇宫，普吉岛的浪花，长野的户隐神社，函馆山的大雪，北海道的温泉雾气。",
+                        "工作后的感情少了些轰轰烈烈，倒像一碗桂花醪糟，甜味沉淀在生活褶皱里。下班和你一块回家，在客厅里看你做饭，逗一会猫猫，时不时去厨房打打下手，一块边看综艺节目边吃饭。\n我偶尔会想,如果我现在还是一个人，会过着怎样的生活呢，肯定是单调无趣的，如同你不在的周末。",
+                        "30岁是新的起点,但对我而言，你依然是那个在首次自驾在南澳大桥上欢呼雀跃的姑娘。谢谢你让我从'宅男'变成'旅人'，从'木头'变成会笨拙表达爱的丈夫。往后余生，想和你继续收集更多平凡的瞬间：可能是打双人游戏时的互相嘲讽，可能是在你画画时递过去的一杯热水，可能是我在工作时你突然冲过来的一个拥抱。",
+                        "我依然没记住你在结婚典礼上的那句什么树什么风是怎么说的，只好用简单的话语送上我的祝福。",
+                        "生日快乐，我的姑娘。",
+                        "永远，爱你如初！"
+                    ];
+                    document.getElementById('envelope-modal').style.display = 'block';
+                    break;
+                    
+                    // 显示所有行，逐字显示
+                    for (let i = 0; i < loveMessages.length; i++) {
+                        setTimeout(() => {
+                            const loveLine = document.createElement('div');
+                            loveLine.className = 'console-line';
+                            consoleOutput.appendChild(loveLine);
+                            
+                            let charIndex = 0;
+                            const message = loveMessages[i];
+                            const interval = setInterval(() => {
+                                if (charIndex < message.length) {
+                                    loveLine.innerHTML = message.substring(0, charIndex + 1);
+                                    charIndex++;
+                                    consoleOutput.scrollTop = consoleOutput.scrollHeight;
+                                } else {
+                                    clearInterval(interval);
+                                }
+                            }, 100);
+                        }, 2000 + (i - 4) * 1000);
+                    }
+                    break;
+                default:
+                    response.textContent = `未知命令: ${command}`;
+            }
+            
+            consoleOutput.appendChild(response);
+        }
+        
+        // 故障效果
+        function activateGlitch() {
+            document.body.classList.add('glitch-effect');
+            
+            // 播放alarm音效
+            var alarmSound = new Audio('sounds/alarm.mp3');
+            alarmSound.play();
+            
+            setTimeout(() => {
+                document.body.classList.remove('glitch-effect');
+                // 停止音效
+                alarmSound.pause();
+            }, 1800);
+            
+            // 添加故障样式
+            const style = document.createElement('style');
+            style.id = 'glitch-style';
+            style.textContent = `
+                @keyframes glitch {
+                    0% { filter: hue-rotate(0deg); }
+                    20% { filter: hue-rotate(90deg); }
+                    40% { filter: hue-rotate(180deg) blur(1px); }
+                    60% { filter: hue-rotate(270deg); }
+                    80% { filter: hue-rotate(360deg) blur(2px); }
+                    100% { filter: hue-rotate(0deg); }
+                }
+                .glitch-effect {
+                    animation: glitch 0.5s linear;
+                }
+                
+                @keyframes textGlitch {
+                    0% { transform: translate(0); text-shadow: 0 0 5px var(--neon-pink); }
+                    10% { transform: translate(-2px, 2px); text-shadow: 0 0 10px var(--neon-blue); }
+                    20% { transform: translate(2px, -2px); text-shadow: 0 0 15px var(--neon-purple); }
+                    30% { transform: translate(-2px, -2px); text-shadow: 0 0 10px var(--neon-pink); }
+                    40% { transform: translate(2px, 2px); text-shadow: 0 0 5px var(--neon-blue); }
+                    50% { transform: translate(-1px, 1px); text-shadow: 0 0 15px var(--neon-purple); }
+                    60% { transform: translate(1px, -1px); text-shadow: 0 0 10px var(--neon-pink); }
+                    70% { transform: translate(-1px, -1px); text-shadow: 0 0 5px var(--neon-blue); }
+                    80% { transform: translate(1px, 1px); text-shadow: 0 0 10px var(--neon-purple); }
+                    90% { transform: translate(0); text-shadow: 0 0 15px var(--neon-pink); }
+                    100% { transform: translate(0); text-shadow: 0 0 5px var(--neon-blue); }
+                }
+                
+                @keyframes warningFlash {
+                    0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+                        opacity: 1;
+                        color: var(--neon-pink);
+                        text-shadow: 0 0 10px var(--neon-pink), 0 0 20px var(--neon-pink);
+                    }
+                    20%, 24%, 55% {
+                        opacity: 0.8;
+                        color: var(--neon-blue);
+                        text-shadow: 0 0 5px var(--neon-blue);
+                    }
+                }
+                
+                @keyframes scanLine {
+                    0% {
+                        transform: translateY(-100%);
+                    }
+                    100% {
+                        transform: translateY(100%);
+                    }
+                }
+                
+                .warning-container {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 9999;
+                    background-color: rgba(13, 2, 33, 0.7);
+                    pointer-events: none;
+                    overflow: hidden;
+                }
+                
+                .warning-text {
+                    font-size: 3rem;
+                    font-weight: bold;
+                    text-transform: uppercase;
+                    animation: textGlitch 0.3s infinite, warningFlash 1.5s infinite alternate;
+                    letter-spacing: 2px;
+                    margin: 10px 0;
+                }
+                
+                .scan-line {
+                    position: absolute;
+                    width: 100%;
+                    height: 5px;
+                    background: linear-gradient(90deg, transparent, var(--neon-blue), transparent);
+                    animation: scanLine 2s linear infinite;
+                }
+                
+                .glitch-overlay {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: repeating-linear-gradient(
+                        0deg,
+                        rgba(0, 0, 0, 0.1),
+                        rgba(0, 0, 0, 0.1) 1px,
+                        transparent 1px,
+                        transparent 2px
+                    );
+                    pointer-events: none;
+                    z-index: 1;
+                }
+            `;
+            document.head.appendChild(style);
+            
+            // 创建警告容器
+            const warningContainer = document.createElement('div');
+            warningContainer.className = 'warning-container';
+            
+            // 添加扫描线
+            const scanLine1 = document.createElement('div');
+            scanLine1.className = 'scan-line';
+            warningContainer.appendChild(scanLine1);
+            
+            // 添加故障线条覆盖层
+            const glitchOverlay = document.createElement('div');
+            glitchOverlay.className = 'glitch-overlay';
+            warningContainer.appendChild(glitchOverlay);
+            
+            // 添加警告文本
+            const warningText1 = document.createElement('div');
+            warningText1.className = 'warning-text';
+            warningText1.textContent = '危险！';
+            warningContainer.appendChild(warningText1);
+            
+            const warningText2 = document.createElement('div');
+            warningText2.className = 'warning-text';
+            warningText2.textContent = '爱意溢出！';
+            warningContainer.appendChild(warningText2);
+            
+            const warningText3 = document.createElement('div');
+            warningText3.className = 'warning-text';
+            warningText3.textContent = '系统故障！';
+            warningContainer.appendChild(warningText3);
+            
+            // 添加第二条扫描线
+            const scanLine2 = document.createElement('div');
+            scanLine2.className = 'scan-line';
+            scanLine2.style.animationDelay = '1s';
+            warningContainer.appendChild(scanLine2);
+            
+            // 将警告容器添加到body
+            document.body.appendChild(warningContainer);
+            
+            // 3秒后移除警告
+            setTimeout(() => {
+                document.body.removeChild(warningContainer);
+            }, 3000);
+            
+            // 添加控制台消息
+            const consoleOutput = document.getElementById('console-output');
+            const line = document.createElement('div');
+            line.className = 'console-line';
+            line.innerHTML = `<span style="color: var(--neon-purple);">警告: 系统出现故障效果! 检测到爱意溢出!</span>`;
+            consoleOutput.appendChild(line);
+        }
+        
+        // 初始化页面
+        function initPage() {
+            animateAgeCounter();
+            initMap();
+            setupConsole();
+            
+            // 添加控制台欢迎消息
+            setTimeout(() => {
+                const consoleOutput = document.getElementById('console-output');
+                const line = document.createElement('div');
+                line.className = 'console-line';
+                line.innerHTML = `<span style="color: var(--neon-pink);">> 系统准备就绪! 输入 HELP 获取命令列表</span>`;
+                consoleOutput.appendChild(line);
+                consoleOutput.scrollTop = consoleOutput.scrollHeight;
+            }, 2000);
+            
+            // 控制台随机消息
+            const messages = [
+                "> 检测到高浓度幸福指数...",
+                "> 警告: 笑容数据超出正常范围!",
+                "> 正在计算下次冒险路线...",
+                "> 记忆存储空间剩余: ∞",
+                "> 系统建议: 更多蛋糕!",
+                "> 输入'你的名字'有惊喜!",
+                "> 生日祝福模块已激活: 30岁快乐!",
+                "> 系统检测到大量美好回忆数据...",
+                "> 警告: 可爱度突破天际!",
+                "> 正在加载特别生日惊喜...",
+                "> 建议: 今天可以任性一整天!"
+            ];
+            
+            setInterval(() => {
+                if (Math.random() > 0.7) {
+                    const consoleOutput = document.getElementById('console-output');
+                    const line = document.createElement('div');
+                    line.className = 'console-line';
+                    line.textContent = messages[Math.floor(Math.random() * messages.length)];
+                    consoleOutput.appendChild(line);
+                    consoleOutput.scrollTop = consoleOutput.scrollHeight;
+                }
+            }, 5000);
+        }
+        
+        // 显示模态框函数
+        function showModal(modalType) {
+            if(modalType === 'photos') {
+                // 获取地图中定义的memories变量
+                const mapMemories = window.memories || [];
+                
+                // 初始化照片数据 - 使用memories数组中的所有照片
+                currentLocationPhotos = [];
+                
+                // 从所有记忆点收集照片
+                mapMemories.forEach(memory => {
+                    memory.photos.forEach(photo => {
+                        // 添加位置信息到照片标题
+                        currentLocationPhotos.push({
+                            url: photo.url,
+                            caption: `${memory.title} - ${photo.caption}`
+                        });
+                    });
+                });
+                
+                if (currentLocationPhotos.length > 0) {
+                    currentPhotoIndex = 0;
+                    updatePhotoModal();
+                    document.getElementById('photo-modal').style.display = 'block';
+                    
+                    // 添加照片墙标题
+                    const modalTitle = document.querySelector('.modal-content h3');
+                    if (modalTitle) {
+                        modalTitle.textContent = `记忆照片墙 (${currentLocationPhotos.length}张)`;
+                    }
+                } else {
+                    console.error('无法获取照片数据，请确保页面已完全加载');
+                    // 添加一个提示信息到控制台
+                    const consoleOutput = document.getElementById('console-output');
+                    if (consoleOutput) {
+                        const line = document.createElement('div');
+                        line.className = 'console-line';
+                        line.innerHTML = `<span style="color: var(--neon-pink);">系统错误: 记忆数据尚未加载完成，请稍后再试!</span>`;
+                        consoleOutput.appendChild(line);
+                        consoleOutput.scrollTop = consoleOutput.scrollHeight;
+                    }
+                }
+            }
+        }
+        
+        // 关闭模态框函数
+        function closeModal(modalType) {
+            // 移除键盘事件监听
+            document.removeEventListener('keydown', handleKeyDown);
+            if(modalType === 'photos') {
+                document.getElementById('photo-modal').style.display = "none";
+            }
+        }
+        
+        // 点击页面任何地方关闭模态框
+        window.onclick = function(event) {
+            if (event.target.className === 'modal') {
+                event.target.style.display = "none";
+            }
+        }
+    </script>
+</body>
+</html>
+<div id="speaker-icon" style="position: absolute; top: 10px; right: 10px; cursor: pointer;">🔊</div>
