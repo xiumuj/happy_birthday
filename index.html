@@ -585,6 +585,7 @@
         </footer>
     </div>
 
+    <script src="https://webapi.amap.com/maps/js/loader.js"></script>
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
     <script>
@@ -742,11 +743,16 @@ function playClickSound() {
 
         // 初始化地图
         function initMap() {
-            const map = L.map('memory-map').setView([30, 0], 2);
+            const map = L.map('memory-map', {
+                center: [30, 0],
+                zoom: 2,
+                crs: L.CRS.EPSG3857
+            });
             
-            // 自定义赛博朋克风格地图
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            // 使用高德地图图层
+            L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
+                subdomains: ['1', '2', '3', '4'],
+                attribution: '&copy; 高德地图',
                 className: 'cyber-map'
             }).addTo(map);
             
