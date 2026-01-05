@@ -15,6 +15,10 @@
             --glow: 0 0 10px var(--neon-blue), 0 0 20px var(--neon-pink);
         }
         
+        * {
+            box-sizing: border-box;
+        }
+        
         body {
             background-color: var(--dark-bg);
             color: #fff;
@@ -176,8 +180,9 @@
             background-color: rgba(0, 0, 0, 0.7);
             border: 1px solid var(--neon-blue);
             height: 200px;
-            overflow-y: scroll;
+            overflow-y: auto; /* 改为 auto */
             font-family: monospace;
+            -webkit-overflow-scrolling: touch; /* 增强移动端滚动流畅度 */
         }
         
         .console-line {
@@ -265,7 +270,7 @@
             }
             
             #memory-map {
-                height: 300px;
+                height: 450px; /* 增加平板端的地图高度 */
             }
             
             .modal-content {
@@ -280,49 +285,107 @@
         
         @media (max-width: 480px) {
             h1 {
-                font-size: 1.5rem;
+                font-size: 1.4rem; /* 稍微缩小一点 */
+                padding: 0 10px;
             }
             
             .age-counter {
-                font-size: 3rem;
+                font-size: 2.8rem;
+                margin: 0.5rem 0;
             }
             
             #memory-map {
-                height: 200px;
+                height: 350px; /* 增加地图高度，方便操作 */
+                width: 95%;
             }
             
             .cyber-button {
-                padding: 0.5rem 1rem;
+                padding: 0.6rem 1.2rem;
                 font-size: 0.9rem;
                 margin: 0.3rem;
+                min-width: 100px; /* 增加最小宽度方便点击 */
             }
             
             .modal-content {
-                width: 98%;
+                width: 95%;
                 margin: 5% auto;
-                padding: 10px;
+                padding: 15px;
+            }
+
+            .close {
+                width: 44px; /* 增加关闭按钮点击区域 */
+                height: 44px;
+                right: 10px;
+                top: 5px;
             }
             
             .photo-thumbnail {
-                width: 80px;
-                height: 80px;
+                width: 70px;
+                height: 70px;
+            }
+
+            .thumbnail-container {
+                grid-template-columns: repeat(auto-fill, minmax(75px, 1fr)); /* 移动端每行显示更多缩略图 */
+                gap: 5px;
+                max-height: 200px;
             }
             
             .console {
-                height: 150px;
-                font-size: 0.8rem;
+                height: 140px;
+                font-size: 0.75rem;
+                width: 95%;
+            }
+
+            .letter-content {
+                width: 95%;
+                padding: 20px;
+                font-size: 1rem;
+                line-height: 1.6;
+                margin: 2% auto;
             }
             
             .hero-content {
-                padding: 1rem;
+                padding: 10px !important;
+                width: 100% !important;
+                display: flex !important;
+                justify-content: center !important;
+                align-items: center !important;
+            }
+            
+            .hero-content .cyber-card {
+                padding: 1.2rem !important;
+                width: calc(100% - 20px) !important;
+                max-width: none !important;
+                margin: 0 auto !important;
+            }
+
+            .decorative-elements {
+                display: none; /* 移动端隐藏浮动装饰，减少干扰 */
             }
             
             .hero-content h2 {
-                font-size: 1.5rem;
+                font-size: 1.3rem !important;
+                margin-bottom: 0.8rem !important;
             }
             
             .hero-content p {
-                font-size: 1rem;
+                font-size: 0.95rem !important;
+                margin-bottom: 1.2rem !important;
+            }
+
+            .hero-bg {
+                filter: brightness(0.5) blur(2px) !important;
+            }
+
+            .hero-content .cyber-button {
+                padding: 0.7rem 1.8rem !important;
+                font-size: 1.1rem !important;
+                width: 80% !important; /* 授权按钮在移动端更醒目 */
+            }
+
+            #cake {
+                font-size: 3rem !important;
+                margin-bottom: 1rem !important;
             }
         }
 
@@ -355,6 +418,7 @@
             padding: 10px;
             scrollbar-width: thin;
             scrollbar-color: var(--neon-blue) var(--dark-bg);
+            -webkit-overflow-scrolling: touch; /* 增强移动端滚动流畅度 */
         }
         
         .thumbnail-container::-webkit-scrollbar {
@@ -448,23 +512,25 @@
             line-height: 1.8;
             color: var(--neon-blue);
             white-space: pre-line;
+            word-wrap: break-word; /* 确保长文本不溢出 */
         }
 
         .letter-close {
             position: absolute;
-            right: 20px;
-            top: 20px;
+            right: 15px;
+            top: 15px;
             color: var(--neon-pink);
-            font-size: 24px;
+            font-size: 28px;
             cursor: pointer;
-            width: 40px;
-            height: 40px;
+            width: 44px; /* 增加点击区域 */
+            height: 44px;
             display: flex;
             align-items: center;
             justify-content: center;
             border-radius: 50%;
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.5);
             transition: all 0.3s ease;
+            z-index: 10;
         }
 
         .letter-close:hover {
@@ -744,16 +810,21 @@ function playClickSound() {
         // 初始化地图
         function initMap() {
             const map = L.map('memory-map', {
-                center: [30, 0],
-                zoom: 2,
-                crs: L.CRS.EPSG3857
+                center: [35, 105], // 默认以中国为中心
+                zoom: 4,           // 默认缩放级别
+                minZoom: 3,        // 限制最小缩放，防止缩得太小导致内容消失
+                maxZoom: 18,       // 限制最大缩放
+                crs: L.CRS.EPSG3857,
+                worldCopyJump: true // 允许在跨越国际日期变更线时自动跳转
             });
             
             // 使用高德地图图层
             L.tileLayer('https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}', {
                 subdomains: ['1', '2', '3', '4'],
                 attribution: '&copy; 高德地图',
-                className: 'cyber-map'
+                className: 'cyber-map',
+                minZoom: 3,
+                maxZoom: 18
             }).addTo(map);
             
             // 自定义地图样式
@@ -762,8 +833,8 @@ function playClickSound() {
                 .cyber-map {
                     filter: hue-rotate(180deg) contrast(1.2) saturate(1.5) brightness(0.7) invert(100%);
                 }
-                .cyber-map .leaflet-tile {
-                    border: 1px solid rgba(5, 217, 232, 0.1) !important;
+                .leaflet-tile-container img {
+                    box-sizing: content-box !important; /* 恢复瓦片的默认盒模型 */
                 }
             `;
             document.head.appendChild(style);
@@ -1039,8 +1110,8 @@ function playClickSound() {
             document.getElementById('location-count').textContent = memories.length;
             document.getElementById('total-distance').textContent = "12,345";
             
-            // 调整地图视图
-            map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+            // 调整地图视图 - 默认显示中国范围，不再强制缩放至所有点
+            // map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
         }
         
         // 当前展示的位置照片数据
