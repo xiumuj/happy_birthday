@@ -592,10 +592,6 @@
         <section style="margin: 3rem 0;">
             <h2 style="text-align: center; color: var(--neon-purple); margin-bottom: 1rem;">>>> 记忆坐标追踪系统 <<<</h2>
             <div id="memory-map" class="cyber-border"></div>
-            <div class="map-overlay">
-                <p style="margin: 0; color: var(--neon-blue);">已记录坐标点: <span id="location-count">0</span></p>
-                <p style="margin: 0; color: var(--neon-pink);">总里程: <span id="total-distance">0</span> km</p>
-            </div>
         </section>
 
         <!-- 照片模态框 -->
@@ -1107,8 +1103,12 @@ function playClickSound() {
             });
             
             // 更新统计信息
-            document.getElementById('location-count').textContent = memories.length;
-            document.getElementById('total-distance').textContent = "12,345";
+            if (document.getElementById('location-count')) {
+                document.getElementById('location-count').textContent = memories.length;
+            }
+            if (document.getElementById('total-distance')) {
+                document.getElementById('total-distance').textContent = "12,345";
+            }
             
             // 调整地图视图 - 默认显示中国范围，不再强制缩放至所有点
             // map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
